@@ -1,5 +1,5 @@
-resource "azurerm_linux_virtual_machine" "envoy-lb" {
-  name                = "envoy-${var.project_name}-${var.environment}"
+resource "azurerm_linux_virtual_machine" "monitor" {
+  name                = "monitor-${var.project_name}-${var.environment}"
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.size
