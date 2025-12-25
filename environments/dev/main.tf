@@ -68,17 +68,17 @@ module "envoy-lb" {
   depends_on = [module.network]
 }
 
-module "monitoring" {
-  source              = "../../modules/monitoring"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  size                = var.size
+# module "monitoring" {
+#   source              = "../../modules/monitoring"
+#   resource_group_name = data.azurerm_resource_group.main.name
+#   location            = data.azurerm_resource_group.main.location
+#   size                = var.size
 
-  # Configuration
-  project_name          = var.project_name
-  environment           = var.environment
-  network_interface_ids = [module.network.monitor_nic_id]
-  ssh_public_key        = data.azurerm_key_vault_secret.main.value
+#   # Configuration
+#   project_name          = var.project_name
+#   environment           = var.environment
+#   network_interface_ids = [module.network.monitor_nic_id]
+#   ssh_public_key        = data.azurerm_key_vault_secret.main.value
 
-  depends_on = [module.network]
-}
+#   depends_on = [module.network]
+# }

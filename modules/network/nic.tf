@@ -7,7 +7,7 @@ resource "azurerm_network_interface" "envoy_nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.pip.id
+    public_ip_address_id          = azurerm_public_ip.envoy_pip.id
   }
 }
 
@@ -20,6 +20,6 @@ resource "azurerm_network_interface" "monitor_nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.pip.id
+    public_ip_address_id          = azurerm_public_ip.monitor_pip.id
   }
 }

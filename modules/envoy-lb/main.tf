@@ -3,6 +3,7 @@ resource "azurerm_linux_virtual_machine" "envoy-lb" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = var.size
+  admin_username      = "adminuser"
 
   disable_password_authentication = true
   network_interface_ids           = var.network_interface_ids
@@ -23,6 +24,8 @@ resource "azurerm_linux_virtual_machine" "envoy-lb" {
     sku       = "22_04-lts"
     version   = "latest"
   }
+
+  custom_data = base64encode(file("${path.module}/cloud-init.yml"))
 
   tags = {
     environment = var.environment
