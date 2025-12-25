@@ -12,8 +12,22 @@ resource "azurerm_subnet" "subnet" {
   address_prefixes     = var.address_prefixes
 }
 
-resource "azurerm_public_ip" "pip" {
-  name                = "${var.project_name}-${var.environment}-pip"
+resource "azurerm_public_ip" "envoy_pip" {
+  name                = "${var.project_name}-${var.environment}-envoy-pip"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  allocation_method   = "Static"
+}
+
+resource "azurerm_public_ip" "monitor_pip" {
+  name                = "${var.project_name}-${var.environment}-monitor-pip"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  allocation_method   = "Static"
+}
+
+resource "azurerm_public_ip" "monitor_pip" {
+  name                = "${var.project_name}-${var.environment}-monitor-pip"
   resource_group_name = var.resource_group_name
   location            = var.location
   allocation_method   = "Static"
