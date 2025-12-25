@@ -14,6 +14,10 @@ output "vnet_id" {
 }
 
 # Network Interface Card (NIC)
-output "nic_id" {
-  value = azurerm_network_interface.nic.id
+output "envoy_nic_id" {
+  value = azurerm_network_interface.envoy_nic.id
+}
+
+output "monitor_nic_id" {
+  value = azurerm_network_interface.monitor_nic.id
 }

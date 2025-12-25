@@ -1,0 +1,27 @@
+static_resources:
+  listeners:
+    - name: listener_0
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 80 }
+  clusters:
+    - name: backend_cluster
+      connect_timeout: 5s
+      type: strict_dns
+      load_assignment:
+        cluster_name: backend_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      { address: api-backend.api.internal, port_value: 8080 }
+  health_checks:
+    - name: health_check_0
+      timeout: 2s
+      interval: 5s
+      unhealthy_threshold: 3
+      healthy_threshold: 2
+      http_health_check:
+        path: /healthz
+        host: api-backend.api.internal
+        port: 8080

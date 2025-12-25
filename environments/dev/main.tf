@@ -62,7 +62,7 @@ module "envoy-lb" {
   # Configuration
   project_name          = var.project_name
   environment           = var.environment
-  network_interface_ids = [module.network.nic_id]
+  network_interface_ids = [module.network.envoy_nic_id]
   ssh_public_key        = data.azurerm_key_vault_secret.main.value
 
   depends_on = [module.network]
@@ -77,7 +77,7 @@ module "monitoring" {
   # Configuration
   project_name          = var.project_name
   environment           = var.environment
-  network_interface_ids = [module.network.nic_id]
+  network_interface_ids = [module.network.monitor_nic_id]
   ssh_public_key        = data.azurerm_key_vault_secret.main.value
 
   depends_on = [module.network]

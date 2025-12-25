@@ -1,11 +1,11 @@
-output "vm_name" {
+output "name" {
   value = azurerm_linux_virtual_machine.monitor.name
 }
 
-output "vm_public_ip" {
+output "public_ip" {
   value = azurerm_linux_virtual_machine.monitor.public_ip_address
 }
 
-output "vm_private_ip" {
+output "private_ip" {
   value = azurerm_linux_virtual_machine.monitor.private_ip_address
 }

@@ -1,5 +1,5 @@
 resource "azurerm_linux_virtual_machine_scale_set" "backend" {
-  name                = "vmss-${var.project_name}-backend-${var.environment}"
+  name                = "${var.project_name}-backend-${var.environment}-vmss"
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "Standard_B1ms"

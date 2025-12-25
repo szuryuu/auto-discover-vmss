@@ -1,18 +1,18 @@
 # VM
 output "vm_envoy_lb_public_ip" {
-  value = module.envoy-lb.public_ip_address
+  value = module.envoy-lb.public_ip
 }
 
 output "vm_envoy_lb_private_ip" {
-  value = module.envoy-lb.private_ip_address
+  value = module.envoy-lb.private_ip
 }
 
 output "vm_monitoring_public_ip" {
-  value = module.monitoring.public_ip_address
+  value = module.monitoring.public_ip
 }
 
 output "vm_monitoring_private_ip" {
-  value = module.monitoring.private_ip_address
+  value = module.monitoring.private_ip
 }
 
 # Network
