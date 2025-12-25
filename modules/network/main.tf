@@ -5,7 +5,6 @@ resource "azurerm_virtual_network" "network" {
   address_space       = var.address_space
 }
 
-# Subnet
 resource "azurerm_subnet" "subnet" {
   name                 = "vm-${var.project_name}-${var.environment}-subnet"
   resource_group_name  = var.resource_group_name

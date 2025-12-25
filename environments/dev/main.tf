@@ -39,8 +39,22 @@ module "network" {
   address_prefixes = var.address_prefixes
 }
 
-module "backend_vmss" {
+module "backend-vmss" {
   source              = "../../modules/backend-vmss"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+
+  # Configuration
+  project_name   = var.project_name
+  environment    = var.environment
+  ssh_public_key = data.azurerm_key_vault_secret.main.value
+  subnet_id      = module.network.subnet_id
+
+  depends_on = [module.network]
+}
+
+module "envoy-lb" {
+  source              = "../../modules/envoy-lb"
   resource_group_name = data.azurerm_resource_group.main.name
   location            = data.azurerm_resource_group.main.location
   size                = var.size
@@ -48,7 +62,22 @@ module "backend_vmss" {
   # Configuration
   project_name          = var.project_name
   environment           = var.environment
-  network_interface_ids = module.network.nic_id
+  network_interface_ids = [module.network.nic_id]
+  ssh_public_key        = data.azurerm_key_vault_secret.main.value
+
+  depends_on = [module.network]
+}
+
+module "monitoring" {
+  source              = "../../modules/monitoring"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  size                = var.size
+
+  # Configuration
+  project_name          = var.project_name
+  environment           = var.environment
+  network_interface_ids = [module.network.nic_id]
   ssh_public_key        = data.azurerm_key_vault_secret.main.value
 
   depends_on = [module.network]

@@ -1,14 +1,14 @@
 output "vm_name" {
   description = "The name of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.name
+  value       = azurerm_linux_virtual_machine_scale_set.backend.name
 }
 
 output "vm_id" {
   description = "The ID of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.id
+  value       = azurerm_linux_virtual_machine_scale_set.backend.id
 }
 
-output "private_ip_address" {
-  description = "The private IP address of the virtual machine"
-  value       = azurerm_linux_virtual_machine.main.private_ip_address
+output "instances" {
+  description = "The number of instances in the virtual machine scale set"
+  value       = azurerm_linux_virtual_machine_scale_set.backend.instances
 }

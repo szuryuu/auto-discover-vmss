@@ -1,6 +1,6 @@
 # Subnet
 output "subnet_id" {
-  value = azurerm_subnet.vm_subnet.id
+  value = azurerm_subnet.subnet.id
 }
 
 # Public IP

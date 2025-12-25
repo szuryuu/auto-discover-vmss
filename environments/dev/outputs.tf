@@ -1,10 +1,18 @@
-# IP
-output "public_ip" {
-  value = module.vm.public_ip_address
+# VM
+output "vm_envoy_lb_public_ip" {
+  value = module.envoy-lb.public_ip_address
 }
 
-output "private_ip" {
-  value = module.vm.private_ip_address
+output "vm_envoy_lb_private_ip" {
+  value = module.envoy-lb.private_ip_address
+}
+
+output "vm_monitoring_public_ip" {
+  value = module.monitoring.public_ip_address
+}
+
+output "vm_monitoring_private_ip" {
+  value = module.monitoring.private_ip_address
 }
 
 # Network
@@ -14,7 +22,7 @@ output "network_interface_id" {
 
 # Environment
 output "vm_name" {
-  value = module.vm.name
+  value = module.backend_vmss.vm_name
 }
 
 output "environment" {

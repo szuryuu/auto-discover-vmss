@@ -29,5 +29,6 @@ variable "address_prefixes" {
 }
 
 variable "dns_record" {
-  type = list(string)
+  type    = list(string)
+  default = [""]
 }

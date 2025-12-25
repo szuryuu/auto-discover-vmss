@@ -1,0 +1,9 @@
+#cloud-config
+packages:
+  - docker.io
+
+runcmd:
+  - systemctl start docker
+  - systemctl enable docker
+  - docker run -d -p 8080:80 --name backend nginx:alpine
+  - docker exec backend sh -c 'echo "<h1>Backend: $(hostname)</h1>" > /usr/share/nginx/html/index.html'
