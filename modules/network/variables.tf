@@ -30,5 +30,5 @@ variable "address_prefixes" {
 
 variable "dns_record" {
   type    = list(string)
-  default = [""]
+  default = ["10.1.1.4"] # Dummy
 }
