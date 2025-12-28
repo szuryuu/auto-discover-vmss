@@ -281,7 +281,7 @@ write_files:
     content: |
       module control-plane
 
-      go 1.21
+      go 1.18
 
       require (
           github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
@@ -295,7 +295,15 @@ packages:
   - golang-go
 
 runcmd:
-  - cd /opt/control-plane
-  - go mod download
-  - go build -o control-plane main.go
-  - nohup ./control-plane > /var/log/control-plane.log 2>&1 &
+  - |
+    set -e
+    apt-get update
+    apt-get install -y curl
+    curl -fsSL https://go.dev/dl/go1.21.5.linux-amd64.tar.gz | tar -C /usr/local -xz
+    export PATH=/usr/local/go/bin:$PATH
+
+    cd /opt/control-plane
+    go version
+    go mod download
+    go build -o control-plane main.go
+    nohup ./control-plane > /var/log/control-plane.log 2>&1 &
