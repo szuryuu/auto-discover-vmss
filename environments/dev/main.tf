@@ -60,7 +60,8 @@ module "control-plane" {
   resource_group_name = data.azurerm_resource_group.main.name
   resource_group_id   = data.azurerm_resource_group.main.id
   location            = data.azurerm_resource_group.main.location
-  size                = var.size
+  # size                = var.size
+  size = "Standard_B2s"
 
   # Configuration
   project_name          = var.project_name

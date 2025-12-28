@@ -1,5 +1,25 @@
 #cloud-config
 write_files:
+  - path: /etc/systemd/system/control-plane.service
+    content: |
+      [Unit]
+      Description=Envoy Control Plane
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=root
+      WorkingDirectory=/opt/control-plane
+      ExecStart=/opt/control-plane/control-plane
+      Restart=always
+      RestartSec=10
+
+      StandardOutput=journal
+      StandardError=journal
+
+      [Install]
+      WantedBy=multi-user.target
+
   - path: /opt/control-plane/main.go
     content: |
       package main
@@ -291,19 +311,21 @@ write_files:
           google.golang.org/protobuf v1.32.0
       )
 
-packages:
-  - golang-go
-
 runcmd:
   - |
     set -e
     apt-get update
     apt-get install -y curl
     curl -fsSL https://go.dev/dl/go1.21.5.linux-amd64.tar.gz | tar -C /usr/local -xz
+
+    export HOME=/root
+    export GOPATH=/root/go
     export PATH=/usr/local/go/bin:$PATH
 
     cd /opt/control-plane
     go version
-    go mod download
+    go mod tidy
     go build -o control-plane main.go
-    nohup ./control-plane > /var/log/control-plane.log 2>&1 &
+
+    systemctl daemon-reload
+    systemctl enable --now control-plane
