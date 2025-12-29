@@ -32,12 +32,14 @@ write_files:
           "time"
 
           "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-          "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+          // Ganti armcompute dengan armnetwork untuk fetch IP yang akurat
+          "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
           cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
           core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
           endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
           listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
           route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+          router "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
           clusterservice "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
           discoverygrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
           endpointservice "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
@@ -63,8 +65,9 @@ write_files:
       )
 
       type AzureDiscovery struct {
-          vmClient *armcompute.VirtualMachineScaleSetVMsClient
-          ctx      context.Context
+          // Kita pakai Network Client sekarang, bukan Compute Client
+          nicClient *armnetwork.VirtualMachineScaleSetNetworkInterfacesClient
+          ctx       context.Context
       }
 
       func NewAzureDiscovery(ctx context.Context) (*AzureDiscovery, error) {
@@ -73,38 +76,40 @@ write_files:
               return nil, fmt.Errorf("failed to get credentials: %v", err)
           }
 
-          vmClient, err := armcompute.NewVirtualMachineScaleSetVMsClient(subscriptionID, cred, nil)
+          // Inisialisasi Client Network
+          nicClient, err := armnetwork.NewVirtualMachineScaleSetNetworkInterfacesClient(subscriptionID, cred, nil)
           if err != nil {
-              return nil, fmt.Errorf("failed to create VM client: %v", err)
+              return nil, fmt.Errorf("failed to create Network client: %v", err)
           }
 
           return &AzureDiscovery{
-              vmClient: vmClient,
-              ctx:      ctx,
+              nicClient: nicClient,
+              ctx:       ctx,
           }, nil
       }
 
       func (a *AzureDiscovery) GetVMSSInstances() ([]string, error) {
-          pager := a.vmClient.NewListPager(resourceGroup, vmssName, nil)
+          // Panggil API Network untuk list semua Interface di VMSS
+          pager := a.nicClient.NewListPager(resourceGroup, vmssName, nil)
 
-          instanceCount := 0
+          var ips []string
           for pager.More() {
               page, err := pager.NextPage(a.ctx)
               if err != nil {
-                  return nil, fmt.Errorf("failed to list instances: %v", err)
+                  return nil, fmt.Errorf("failed to list nics: %v", err)
               }
-              instanceCount += len(page.Value)
-          }
 
-          if instanceCount == 0 {
-              return []string{}, nil
-          }
-
-          // Generate IPs based on Azure's default pattern
-          // IMPORTANT: Backends are in 10.1.2.0/24 subnet, starting from .5
-          var ips []string
-          for i := 0; i < instanceCount; i++ {
-              ips = append(ips, fmt.Sprintf("10.1.2.%d", 5+i))
+              for _, nic := range page.Value {
+                  // Pastikan ini Primary NIC agar tidak duplikat
+                  if nic.Properties.Primary != nil && *nic.Properties.Primary {
+                      for _, ipConfig := range nic.Properties.IPConfigurations {
+                          // Ambil PrivateIPAddress yang asli dari Azure
+                          if ipConfig.Properties.PrivateIPAddress != nil {
+                              ips = append(ips, *ipConfig.Properties.PrivateIPAddress)
+                          }
+                      }
+                  }
+              }
           }
 
           return ips, nil
@@ -182,6 +187,11 @@ write_files:
       }
 
       func makeHTTPListener(listenerName, routeName string) *listener.Listener {
+          routerConfig, err := anypb.New(&router.Router{})
+          if err != nil {
+              panic(err)
+          }
+
           manager := &hcm.HttpConnectionManager{
               StatPrefix: "ingress_http",
               RouteSpecifier: &hcm.HttpConnectionManager_Rds{
@@ -197,6 +207,9 @@ write_files:
               },
               HttpFilters: []*hcm.HttpFilter{{
                   Name: "envoy.filters.http.router",
+                  ConfigType: &hcm.HttpFilter_TypedConfig{
+                      TypedConfig: routerConfig,
+                  },
               }},
           }
 
@@ -325,7 +338,8 @@ write_files:
 
       require (
           github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
-          github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.4.0
+          // Kita butuh armnetwork
+          github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5 v5.0.0
           github.com/envoyproxy/go-control-plane v0.12.0
           google.golang.org/grpc v1.60.1
           google.golang.org/protobuf v1.32.0
