@@ -33,6 +33,7 @@ write_files:
 
           "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
           "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5"
+          "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5"
           cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
           core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
           endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -64,8 +65,9 @@ write_files:
       )
 
       type AzureDiscovery struct {
-          vmClient *armcompute.VirtualMachineScaleSetVMsClient
-          ctx      context.Context
+          vmClient  *armcompute.VirtualMachineScaleSetVMsClient
+          nicClient *armnetwork.InterfacesClient
+          ctx       context.Context
       }
 
       func NewAzureDiscovery(ctx context.Context) (*AzureDiscovery, error) {
@@ -79,33 +81,44 @@ write_files:
               return nil, fmt.Errorf("failed to create VM client: %v", err)
           }
 
+          nicClient, err := armnetwork.NewInterfacesClient(subscriptionID, cred, nil)
+          if err != nil {
+              return nil, fmt.Errorf("failed to create NIC client: %v", err)
+          }
+
           return &AzureDiscovery{
-              vmClient: vmClient,
-              ctx:      ctx,
+              vmClient:  vmClient,
+              nicClient: nicClient,
+              ctx:       ctx,
           }, nil
       }
 
       func (a *AzureDiscovery) GetVMSSInstances() ([]string, error) {
-          pager := a.vmClient.NewListPager(resourceGroup, vmssName, nil)
+          nicPager := a.nicClient.NewListVirtualMachineScaleSetNetworkInterfacesPager(
+              resourceGroup,
+              vmssName,
+              nil,
+          )
 
-          instanceCount := 0
-          for pager.More() {
-              page, err := pager.NextPage(a.ctx)
-              if err != nil {
-                  return nil, fmt.Errorf("failed to list instances: %v", err)
-              }
-              instanceCount += len(page.Value)
-          }
-
-          if instanceCount == 0 {
-              return []string{}, nil
-          }
-
-          // Generate IPs based on Azure's default pattern
-          // FIXED: Backends are in 10.1.1.0/24 subnet (based on current infrastructure)
           var ips []string
-          for i := 0; i < instanceCount; i++ {
-              ips = append(ips, fmt.Sprintf("10.1.1.%d", 5+i))
+
+          for nicPager.More() {
+              page, err := nicPager.NextPage(a.ctx)
+              if err != nil {
+                  return nil, fmt.Errorf("failed to list network interfaces: %v", err)
+              }
+
+              for _, nic := range page.Value {
+                  if nic.Properties == nil || nic.Properties.IPConfigurations == nil {
+                      continue
+                  }
+
+                  for _, ipConfig := range nic.Properties.IPConfigurations {
+                      if ipConfig.Properties != nil && ipConfig.Properties.PrivateIPAddress != nil {
+                          ips = append(ips, *ipConfig.Properties.PrivateIPAddress)
+                      }
+                  }
+              }
           }
 
           return ips, nil
@@ -183,7 +196,6 @@ write_files:
       }
 
       func makeHTTPListener(listenerName, routeName string) *listener.Listener {
-          // FIXED: Create Router config and wrap in Any
           routerConfig, err := anypb.New(&router.Router{})
           if err != nil {
               panic(err)
@@ -204,7 +216,6 @@ write_files:
               },
               HttpFilters: []*hcm.HttpFilter{{
                   Name: "envoy.filters.http.router",
-                  // FIXED: Added TypedConfig to satisfy Envoy v3 API
                   ConfigType: &hcm.HttpFilter_TypedConfig{
                       TypedConfig: routerConfig,
                   },
@@ -265,7 +276,6 @@ write_files:
           snapshotCache := cache.NewSnapshotCache(false, cache.IDHash{}, nil)
           srv := server.NewServer(ctx, snapshotCache, nil)
 
-          // Discovery loop
           go func() {
               version := 1
               for {
@@ -302,7 +312,6 @@ write_files:
               }
           }()
 
-          // Start gRPC server
           grpcServer := grpc.NewServer(
               grpc.KeepaliveParams(keepalive.ServerParameters{
                   Time:    30 * time.Second,
@@ -310,7 +319,6 @@ write_files:
               }),
           )
 
-          // Register xDS services
           discoverygrpc.RegisterAggregatedDiscoveryServiceServer(grpcServer, srv)
           endpointservice.RegisterEndpointDiscoveryServiceServer(grpcServer, srv)
           clusterservice.RegisterClusterDiscoveryServiceServer(grpcServer, srv)
@@ -337,6 +345,7 @@ write_files:
       require (
           github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
           github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.4.0
+          github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v5 v5.1.1
           github.com/envoyproxy/go-control-plane v0.12.0
           google.golang.org/grpc v1.60.1
           google.golang.org/protobuf v1.32.0
