@@ -52,6 +52,18 @@ resource "azurerm_network_security_group" "nsg" {
   }
 
   security_rule {
+      name                       = "AllowVnetInternal"
+      priority                   = 150
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "VirtualNetwork"
+      destination_address_prefix = "VirtualNetwork"
+    }
+
+  security_rule {
     name                       = "DenyAllInbound"
     priority                   = 4000
     direction                  = "Inbound"
