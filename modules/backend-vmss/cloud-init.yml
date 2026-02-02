@@ -7,36 +7,70 @@ packages:
   - unzip
 
 write_files:
-  path: /etc/consul.d/client.hcl
-  content: |
-    data_dir = "/var/lib/consul"
-    retry_join = ["${consul_server_ip}"]
-    bind_addr = "{{ GetPrivateIp }}"
+  - path: /etc/consul.d/client.hcl
+    content: |
+      data_dir = "/var/lib/consul"
+      retry_join = ["${consul_server_ip}"]
+      bind_addr = "{{ GetPrivateIP }}"
+      log_level = "INFO"
 
-  path: /etc/consul.d/web.json
-  content: |
-    {
-      "service": {
-        "name": "backend-service",
-        "port": "80",
-        "check": {
-          "http": "http://localhost:80",
-          "interval": "5s"
+  - path: /etc/consul.d/web.json
+    content: |
+      {
+        "service": {
+          "name": "backend-service",
+          "port": 8080,
+          "check": {
+            "http": "http://localhost:8080",
+            "interval": "5s"
+          }
         }
       }
-    }
+
+  - path: /etc/systemd/system/consul.service
+    content: |
+      [Unit]
+      Description=Consul Agent
+      Requires=network-online.target
+      After=network-online.target
+
+      [Service]
+      User=root
+      Group=root
+      ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul.d/
+      ExecReload=/bin/kill -HUP $MAINPID
+      KillMode=process
+      Restart=on-failure
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
 
 runcmd:
   - systemctl enable docker
   - systemctl start docker
+  
   - |
     until docker info; do
+      echo "Waiting for Docker..."
       sleep 3
     done
-  - docker run -d -p 8080:80 --name backend nginx:alpine
-  - |
-    docker exec backend sh -c 'echo "<h1>Backend $(hostname)</h1>" > /usr/share/nginx/html/index.html'
-  - curl -fsSL https://releases.hashicorp.com/consul/1.18.0/consul_1.18.0_linux_amd64.zip -o consul.zip
-  - unzip consul.zip -d /usr/local/bin/
-  - consul agent -config-dir=/etc/consul.d/ -data-dir=/var/lib/consul -daemon
-
+  
+  - docker run -d -p 8080:80 --name backend --restart unless-stopped nginx:alpine
+  - sleep 2
+  - docker exec backend sh -c 'echo "<h1>Backend $(hostname)</h1>" > /usr/share/nginx/html/index.html'
+  
+  - curl -fsSL https://releases.hashicorp.com/consul/1.18.0/consul_1.18.0_linux_amd64.zip -o /tmp/consul.zip
+  - unzip /tmp/consul.zip -d /usr/local/bin/
+  - chmod +x /usr/local/bin/consul
+  
+  - mkdir -p /var/lib/consul
+  - mkdir -p /etc/consul.d
+  
+  - systemctl daemon-reload
+  - systemctl enable consul
+  - systemctl start consul
+  
+  - sleep 5
+  - systemctl status consul >> /var/log/consul-startup.log 2>&1
+  - consul members >> /var/log/consul-startup.log 2>&1

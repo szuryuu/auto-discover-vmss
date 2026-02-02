@@ -3,7 +3,6 @@ resource "azurerm_linux_virtual_machine_scale_set" "backend" {
   resource_group_name = var.resource_group_name
   location            = var.location
   sku                 = "Standard_B1ms"
-  instances           = 3
   admin_username      = "adminuser"
 
   admin_ssh_key {
