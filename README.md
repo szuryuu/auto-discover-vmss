@@ -1,1 +1,1 @@
-# horizontal-scaling-iac
+# consul + envoy
