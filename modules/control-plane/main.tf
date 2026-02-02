@@ -25,7 +25,7 @@ resource "azurerm_linux_virtual_machine" "control_plane" {
     version   = "latest"
   }
 
-  custom_data = base64encode("${path.module}/cloud-init.yml")
+  custom_data = base64encode(file("${path.module}/cloud-init.yml"))
 
   identity {
     type = "SystemAssigned"

@@ -20,7 +20,7 @@ write_files:
         "name": "backend-service",
         "port": "80",
         "check": {
-          "http": "http://localhost:80"
+          "http": "http://localhost:80",
           "interval": "5s"
         }
       }
@@ -38,5 +38,5 @@ runcmd:
     docker exec backend sh -c 'echo "<h1>Backend $(hostname)</h1>" > /usr/share/nginx/html/index.html'
   - curl -fsSL https://releases.hashicorp.com/consul/1.18.0/consul_1.18.0_linux_amd64.zip -o consul.zip
   - unzip consul.zip -d /usr/local/bin/
-  - consul agent -config-dir=/etc/consul.d/ -data-dir=/tmp/consul -daemon
+  - consul agent -config-dir=/etc/consul.d/ -data-dir=/var/lib/consul -daemon
 
